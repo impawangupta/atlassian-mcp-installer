@@ -81,8 +81,8 @@ echo ""
 ask "Press Enter once you have your token ready..." _DUMMY
 echo ""
 
-ask "Atlassian base URL (e.g. https://yourcompany.atlassian.net): " ATLASSIAN_URL
-ATLASSIAN_URL="${ATLASSIAN_URL%/}"
+ask "Atlassian company name (e.g. yourcompany): " ATLASSIAN_COMPANY
+ATLASSIAN_URL="https://${ATLASSIAN_COMPANY}.atlassian.net"
 
 ask "Email address: " ATLASSIAN_EMAIL
 
