@@ -75,15 +75,15 @@ echo "You will need an Atlassian API token."
 echo "Generate one at:"
 echo "  https://id.atlassian.com/manage-profile/security/api-tokens"
 echo ""
-read -rp "Press Enter once you have your token ready..."
+read -rp "Press Enter once you have your token ready..." </dev/tty
 echo ""
 
-read -rp "Atlassian base URL (e.g. https://yourcompany.atlassian.net): " ATLASSIAN_URL
+read -rp "Atlassian base URL (e.g. https://yourcompany.atlassian.net): " ATLASSIAN_URL </dev/tty
 ATLASSIAN_URL="${ATLASSIAN_URL%/}"
 
-read -rp "Email address: " ATLASSIAN_EMAIL
+read -rp "Email address: " ATLASSIAN_EMAIL </dev/tty
 
-read -rsp "API token: " ATLASSIAN_TOKEN
+read -rsp "API token: " ATLASSIAN_TOKEN </dev/tty
 echo ""
 
 # ---- write files ----
@@ -93,7 +93,7 @@ START_SCRIPT="$HOME/.mcp/atlassian/start.sh"
 mkdir -p "$HOME/.mcp/atlassian"
 
 if [[ -f "$ENV_FILE" ]]; then
-  read -rp ".env already exists. Overwrite? [y/N] " OVERWRITE
+  read -rp ".env already exists. Overwrite? [y/N] " OVERWRITE </dev/tty
   [[ "$OVERWRITE" =~ ^[Yy]$ ]] || abort "Aborted. Existing .env preserved."
 fi
 
@@ -151,7 +151,7 @@ echo "Where would you like to register the MCP server?"
 echo "  1) Claude Code CLI only"
 echo "  2) Claude Desktop only"
 echo "  3) Both"
-read -rp "Enter choice [1-3]: " REGISTER_CHOICE
+read -rp "Enter choice [1-3]: " REGISTER_CHOICE </dev/tty
 
 case "$REGISTER_CHOICE" in
   1) register_claude_code ;;
