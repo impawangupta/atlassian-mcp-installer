@@ -10,6 +10,9 @@ info()  { echo -e "${GREEN}[mcp-atlassian]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[mcp-atlassian] WARNING:${NC} $*"; }
 abort() { echo -e "${RED}[mcp-atlassian] ERROR:${NC} $*" >&2; exit 1; }
 
+ask()        { printf "%s" "$1" >/dev/tty; read -r "$2" </dev/tty; }
+ask_secret() { printf "%s" "$1" >/dev/tty; read -rs "$2" </dev/tty; echo >/dev/tty; }
+
 # ---- OS check ----
 if [[ "$(uname -s)" != "Darwin" ]]; then
   abort "This installer only supports macOS. Detected: $(uname -s)"
@@ -75,16 +78,15 @@ echo "You will need an Atlassian API token."
 echo "Generate one at:"
 echo "  https://id.atlassian.com/manage-profile/security/api-tokens"
 echo ""
-read -rp "Press Enter once you have your token ready..." </dev/tty
+ask "Press Enter once you have your token ready..." _DUMMY
 echo ""
 
-read -rp "Atlassian base URL (e.g. https://yourcompany.atlassian.net): " ATLASSIAN_URL </dev/tty
+ask "Atlassian base URL (e.g. https://yourcompany.atlassian.net): " ATLASSIAN_URL
 ATLASSIAN_URL="${ATLASSIAN_URL%/}"
 
-read -rp "Email address: " ATLASSIAN_EMAIL </dev/tty
+ask "Email address: " ATLASSIAN_EMAIL
 
-read -rsp "API token: " ATLASSIAN_TOKEN </dev/tty
-echo ""
+ask_secret "API token: " ATLASSIAN_TOKEN
 
 # ---- write files ----
 ENV_FILE="$HOME/.mcp/atlassian/.env"
@@ -93,7 +95,7 @@ START_SCRIPT="$HOME/.mcp/atlassian/start.sh"
 mkdir -p "$HOME/.mcp/atlassian"
 
 if [[ -f "$ENV_FILE" ]]; then
-  read -rp ".env already exists. Overwrite? [y/N] " OVERWRITE </dev/tty
+  ask ".env already exists. Overwrite? [y/N] " OVERWRITE
   [[ "$OVERWRITE" =~ ^[Yy]$ ]] || abort "Aborted. Existing .env preserved."
 fi
 
@@ -151,7 +153,7 @@ echo "Where would you like to register the MCP server?"
 echo "  1) Claude Code CLI only"
 echo "  2) Claude Desktop only"
 echo "  3) Both"
-read -rp "Enter choice [1-3]: " REGISTER_CHOICE </dev/tty
+ask "Enter choice [1-3]: " REGISTER_CHOICE
 
 case "$REGISTER_CHOICE" in
   1) register_claude_code ;;
