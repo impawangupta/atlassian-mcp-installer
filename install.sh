@@ -121,14 +121,43 @@ STARTEOF
 chmod +x "$START_SCRIPT"
 info "start.sh written to $START_SCRIPT"
 
+# ---- choose MCP server name ----
+MCP_NAME="mcp-atlassian"
+
+name_exists_in_claude_code() {
+  [[ "$CLAUDE_CLI_FOUND" == "true" ]] && claude mcp list 2>/dev/null | grep -q "^${1}:"
+}
+
+name_exists_in_desktop() {
+  local config_path="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+  [[ -f "$config_path" ]] && jq -e --arg n "$1" '.mcpServers[$n]' "$config_path" &>/dev/null
+}
+
+if name_exists_in_claude_code "$MCP_NAME" || name_exists_in_desktop "$MCP_NAME"; then
+  warn "An MCP server named '$MCP_NAME' already exists."
+  ask "Enter a new name for this server: " MCP_NAME
+fi
+
 # ---- register MCP ----
 register_claude_code() {
   if [[ "$CLAUDE_CLI_FOUND" == "false" ]]; then
     warn "Skipping Claude Code CLI registration - 'claude' not found."
     return
   fi
-  info "Registering with Claude Code CLI..."
-  claude mcp add mcp-atlassian "$START_SCRIPT"
+  echo ""
+  echo "Select configuration scope for Claude Code CLI:"
+  echo "  1) user    - available in all projects (recommended)"
+  echo "  2) project - shared with your team via .claude/settings.json"
+  echo "  3) local   - current project only"
+  ask "Enter scope choice [1-3]: " SCOPE_CHOICE
+  case "$SCOPE_CHOICE" in
+    1) MCP_SCOPE="user" ;;
+    2) MCP_SCOPE="project" ;;
+    3) MCP_SCOPE="local" ;;
+    *) warn "Invalid choice. Defaulting to 'user'."; MCP_SCOPE="user" ;;
+  esac
+  info "Registering with Claude Code CLI as '$MCP_NAME' (scope: $MCP_SCOPE)..."
+  claude mcp add --scope "$MCP_SCOPE" "$MCP_NAME" "$START_SCRIPT"
   info "Claude Code CLI: registered."
 }
 
@@ -139,11 +168,11 @@ register_claude_desktop() {
     warn "Is Claude Desktop installed? Skipping."
     return
   fi
-  info "Registering with Claude Desktop..."
+  info "Registering with Claude Desktop as '$MCP_NAME'..."
   local tmp
   tmp=$(mktemp)
-  jq --arg cmd "$START_SCRIPT" \
-    '.mcpServers["mcp-atlassian"] = {"command": $cmd, "args": []}' \
+  jq --arg name "$MCP_NAME" --arg cmd "$START_SCRIPT" \
+    '.mcpServers[$name] = {"command": $cmd, "args": []}' \
     "$config_path" > "$tmp" && mv "$tmp" "$config_path"
   info "Claude Desktop: registered."
 }
