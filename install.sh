@@ -82,12 +82,36 @@ if [[ "$CLAUDE_DESKTOP_FOUND" == "false" ]]; then
   warn "Claude Desktop not found - Desktop registration will be skipped."
 fi
 
-[[ "$CLAUDE_CLI_FOUND" == "false" && "$CLAUDE_DESKTOP_FOUND" == "false" ]] && \
+if [[ "$CLAUDE_CLI_FOUND" == "false" && "$CLAUDE_DESKTOP_FOUND" == "false" ]]; then
   abort "Neither Claude CLI nor Claude Desktop found. Install at least one and re-run."
+fi
 
-# ---- Claude Code scope - asked once, used for all servers ----
+# ---- Choose registration target ----
+REGISTER_CLI=false
+REGISTER_DESKTOP=false
+
+if [[ "$CLAUDE_CLI_FOUND" == "true" && "$CLAUDE_DESKTOP_FOUND" == "true" ]]; then
+  echo ""
+  echo "Both Claude Code CLI and Claude Desktop are available."
+  echo "Where would you like to register the MCP servers?"
+  echo "  1) Both (default)"
+  echo "  2) Claude Code CLI only"
+  echo "  3) Claude Desktop only"
+  ask "Choice [1-3, default 1]: " TARGET_CHOICE
+  case "${TARGET_CHOICE:-1}" in
+    2) REGISTER_CLI=true ;;
+    3) REGISTER_DESKTOP=true ;;
+    *) REGISTER_CLI=true; REGISTER_DESKTOP=true ;;
+  esac
+elif [[ "$CLAUDE_CLI_FOUND" == "true" ]]; then
+  REGISTER_CLI=true
+else
+  REGISTER_DESKTOP=true
+fi
+
+# ---- Claude Code scope (only when registering with CLI) ----
 MCP_SCOPE="user"
-if [[ "$CLAUDE_CLI_FOUND" == "true" ]]; then
+if [[ "$REGISTER_CLI" == "true" ]]; then
   echo ""
   echo "Select Claude Code registration scope (applies to all MCP servers):"
   echo "  1) user    - available in all projects (recommended)"
@@ -106,10 +130,10 @@ fi
 
 name_exists() {
   local name="$1"
-  if [[ "$CLAUDE_CLI_FOUND" == "true" ]]; then
+  if [[ "$REGISTER_CLI" == "true" ]]; then
     claude mcp list 2>/dev/null | grep -q "^${name}:" && return 0
   fi
-  if [[ "$CLAUDE_DESKTOP_FOUND" == "true" ]]; then
+  if [[ "$REGISTER_DESKTOP" == "true" ]]; then
     jq -e --arg n "$name" '.mcpServers[$n] // empty' "$DESKTOP_CONFIG" &>/dev/null && return 0
   fi
   return 1
@@ -125,18 +149,17 @@ pick_name() {
   fi
 }
 
-# Register with all available Claude clients
 register_mcp() {
   local name="$1" start_script="$2"
 
-  if [[ "$CLAUDE_CLI_FOUND" == "true" ]]; then
+  if [[ "$REGISTER_CLI" == "true" ]]; then
     info "Registering '$name' with Claude Code CLI (scope: $MCP_SCOPE)..."
     claude mcp remove "$name" 2>/dev/null || true
     claude mcp add --scope "$MCP_SCOPE" "$name" "$start_script" \
       || warn "Could not register '$name' with Claude Code CLI."
   fi
 
-  if [[ "$CLAUDE_DESKTOP_FOUND" == "true" ]]; then
+  if [[ "$REGISTER_DESKTOP" == "true" ]]; then
     info "Registering '$name' with Claude Desktop..."
     local updated tmp
     updated=$(jq --arg n "$name" --arg cmd "$start_script" \
