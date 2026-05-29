@@ -12,7 +12,7 @@ abort() { echo -e "${RED}[mcp-installer] ERROR:${NC} $*" >&2; exit 1; }
 
 ask()        { printf "%s" "$1" >/dev/tty; read -r "$2" </dev/tty; }
 ask_secret() { printf "%s" "$1" >/dev/tty; read -rs "$2" </dev/tty; echo >/dev/tty; }
-ask_yn()     { ask "$1 [Y/n] " "$2"; [[ -z "${!2}" ]] && printf -v "$2" 'y'; }
+ask_yn()     { ask "$1 [Y/n] " "$2"; [[ -n "${!2}" ]] || printf -v "$2" 'y'; }
 
 # ---- OS check ----
 [[ "$(uname -s)" == "Darwin" ]] || abort "This installer only supports macOS. Detected: $(uname -s)"
