@@ -24,7 +24,7 @@ if ! command -v brew &>/dev/null; then
     || abort "Failed to install Homebrew."
 fi
 for _brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
-  [[ -x "$_brew_bin" ]] && eval "$("$_brew_bin" shellenv)" && break
+  if [[ -x "$_brew_bin" ]]; then eval "$("$_brew_bin" shellenv)"; break; fi
 done
 command -v brew &>/dev/null || abort "Homebrew installed but 'brew' not on PATH. Open a new terminal and re-run."
 info "Homebrew: OK"
@@ -41,7 +41,7 @@ install_dep() {
   if brew install "$pkg"; then
     hash -r 2>/dev/null || true
     for _brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
-      [[ -x "$_brew_bin" ]] && eval "$("$_brew_bin" shellenv)" && break
+      if [[ -x "$_brew_bin" ]]; then eval "$("$_brew_bin" shellenv)"; break; fi
     done
   else
     abort "Failed to install $pkg. Please run manually: brew install $pkg"
@@ -121,7 +121,7 @@ pick_name() {
   if name_exists "$PICKED_NAME"; then
     warn "An MCP server named '$PICKED_NAME' already exists."
     ask "Enter a new name (or press Enter to overwrite '$PICKED_NAME'): " PICKED_NAME
-    [[ -z "$PICKED_NAME" ]] && PICKED_NAME="$1"
+    [[ -n "$PICKED_NAME" ]] || PICKED_NAME="$1"
   fi
 }
 
@@ -171,7 +171,7 @@ if [[ "$SETUP_ATLASSIAN" =~ ^[Yy] ]]; then
   if [[ -f "$ATL_ENV" ]]; then
     info "Existing credentials found at $ATL_ENV."
     ask "Update credentials? [y/N] " UPDATE_ATL
-    [[ "${UPDATE_ATL:-n}" =~ ^[Yy]$ ]] && WRITE_ATL_ENV=true
+    if [[ "${UPDATE_ATL:-n}" =~ ^[Yy]$ ]]; then WRITE_ATL_ENV=true; fi
   else
     WRITE_ATL_ENV=true
   fi
@@ -244,7 +244,7 @@ if [[ "$SETUP_BITBUCKET" =~ ^[Yy] ]]; then
   if [[ -f "$BB_ENV" ]]; then
     info "Existing credentials found at $BB_ENV."
     ask "Update credentials? [y/N] " UPDATE_BB
-    [[ "${UPDATE_BB:-n}" =~ ^[Yy]$ ]] && WRITE_BB_ENV=true
+    if [[ "${UPDATE_BB:-n}" =~ ^[Yy]$ ]]; then WRITE_BB_ENV=true; fi
   else
     WRITE_BB_ENV=true
   fi
@@ -309,7 +309,7 @@ if [[ "$SETUP_CIRCLECI" =~ ^[Yy] ]]; then
   if [[ -f "$CI_ENV" ]]; then
     info "Existing credentials found at $CI_ENV."
     ask "Update credentials? [y/N] " UPDATE_CI
-    [[ "${UPDATE_CI:-n}" =~ ^[Yy]$ ]] && WRITE_CI_ENV=true
+    if [[ "${UPDATE_CI:-n}" =~ ^[Yy]$ ]]; then WRITE_CI_ENV=true; fi
   else
     WRITE_CI_ENV=true
   fi
