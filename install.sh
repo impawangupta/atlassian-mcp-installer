@@ -273,12 +273,18 @@ if [[ "$SETUP_BITBUCKET" =~ ^[Yy] ]]; then
   fi
 
   if [[ "$WRITE_BB_ENV" == "true" ]]; then
-    # Reuse credentials entered this run if Atlassian was just set up
+    BB_EMAIL=""
+    BB_TOKEN=""
+    # If Atlassian credentials were entered this run, offer to reuse them
     if [[ -n "$ATLASSIAN_EMAIL" ]] && [[ -n "$ATLASSIAN_TOKEN" ]]; then
-      info "Reusing Atlassian credentials for Bitbucket."
-      BB_EMAIL="$ATLASSIAN_EMAIL"
-      BB_TOKEN="$ATLASSIAN_TOKEN"
-    else
+      ask "Reuse Atlassian credentials ($ATLASSIAN_EMAIL) for Bitbucket? [Y/n] " REUSE_ATL
+      if [[ -z "$REUSE_ATL" || "$REUSE_ATL" =~ ^[Yy] ]]; then
+        BB_EMAIL="$ATLASSIAN_EMAIL"
+        BB_TOKEN="$ATLASSIAN_TOKEN"
+        info "Reusing Atlassian credentials for Bitbucket."
+      fi
+    fi
+    if [[ -z "$BB_EMAIL" ]]; then
       echo ""
       echo "Bitbucket uses your Atlassian account credentials (same API token)."
       echo "Generate one at: https://id.atlassian.com/manage-profile/security/api-tokens"
