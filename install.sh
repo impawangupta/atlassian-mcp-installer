@@ -163,38 +163,41 @@ ATLASSIAN_EMAIL=""
 ATLASSIAN_TOKEN=""
 
 if [[ "$SETUP_ATLASSIAN" =~ ^[Yy] ]]; then
-  ATLASSIAN_REPO="$HOME/.mcp/atlassian/repo"
-  if [[ -d "$ATLASSIAN_REPO" ]]; then
-    info "Atlassian repo already cloned at $ATLASSIAN_REPO."
-  else
-    info "Cloning sooperset/mcp-atlassian..."
-    mkdir -p "$(dirname "$ATLASSIAN_REPO")"
-    git clone https://github.com/sooperset/mcp-atlassian.git "$ATLASSIAN_REPO" \
-      || abort "Failed to clone mcp-atlassian."
-  fi
-
-  echo ""
-  echo "Generate an Atlassian API token at:"
-  echo "  https://id.atlassian.com/manage-profile/security/api-tokens"
-  echo ""
-  ask "Press Enter when you have your token ready..." _DUMMY
-
-  ask "Company name (e.g. yourcompany for yourcompany.atlassian.net): " ATLASSIAN_COMPANY
-  ATLASSIAN_URL="https://${ATLASSIAN_COMPANY}.atlassian.net"
-  ask "Email address: " ATLASSIAN_EMAIL
-  ask_secret "API token: " ATLASSIAN_TOKEN
-
   mkdir -p "$HOME/.mcp/atlassian"
   ATL_ENV="$HOME/.mcp/atlassian/.env"
   ATL_START="$HOME/.mcp/atlassian/start.sh"
-  WRITE_ATL_ENV=true
+  WRITE_ATL_ENV=false
 
   if [[ -f "$ATL_ENV" ]]; then
-    ask "$ATL_ENV already exists. Overwrite? [y/N] " OW_ATL
-    [[ "${OW_ATL:-n}" =~ ^[Yy]$ ]] || WRITE_ATL_ENV=false
+    info "Existing credentials found at $ATL_ENV."
+    ask "Update credentials? [y/N] " UPDATE_ATL
+    [[ "${UPDATE_ATL:-n}" =~ ^[Yy]$ ]] && WRITE_ATL_ENV=true
+  else
+    WRITE_ATL_ENV=true
   fi
 
   if [[ "$WRITE_ATL_ENV" == "true" ]]; then
+    ATLASSIAN_REPO="$HOME/.mcp/atlassian/repo"
+    if [[ -d "$ATLASSIAN_REPO" ]]; then
+      info "Atlassian repo already cloned at $ATLASSIAN_REPO."
+    else
+      info "Cloning sooperset/mcp-atlassian..."
+      mkdir -p "$(dirname "$ATLASSIAN_REPO")"
+      git clone https://github.com/sooperset/mcp-atlassian.git "$ATLASSIAN_REPO" \
+        || abort "Failed to clone mcp-atlassian."
+    fi
+
+    echo ""
+    echo "Generate an Atlassian API token at:"
+    echo "  https://id.atlassian.com/manage-profile/security/api-tokens"
+    echo ""
+    ask "Press Enter when you have your token ready..." _DUMMY
+
+    ask "Company name (e.g. yourcompany for yourcompany.atlassian.net): " ATLASSIAN_COMPANY
+    ATLASSIAN_URL="https://${ATLASSIAN_COMPANY}.atlassian.net"
+    ask "Email address: " ATLASSIAN_EMAIL
+    ask_secret "API token: " ATLASSIAN_TOKEN
+
     cat > "$ATL_ENV" <<EOF
 JIRA_URL=${ATLASSIAN_URL}
 JIRA_USERNAME=${ATLASSIAN_EMAIL}
@@ -216,7 +219,6 @@ set +a
 exec uv run --directory "$HOME/.mcp/atlassian/repo" mcp-atlassian
 STARTEOF
   chmod +x "$ATL_START"
-  info "Atlassian start.sh written."
 
   pick_name "mcp-atlassian"
   ATL_NAME="$PICKED_NAME"
@@ -234,33 +236,36 @@ echo -e "${GREEN}==========================================${NC}"
 ask_yn "Set up mcp-bitbucket?" SETUP_BITBUCKET
 
 if [[ "$SETUP_BITBUCKET" =~ ^[Yy] ]]; then
-  # Reuse credentials if we just set up Atlassian - they share the same token
-  if [[ "$SETUP_ATLASSIAN" =~ ^[Yy] ]] && [[ -n "$ATLASSIAN_EMAIL" ]] && [[ -n "$ATLASSIAN_TOKEN" ]]; then
-    info "Reusing Atlassian credentials for Bitbucket."
-    BB_EMAIL="$ATLASSIAN_EMAIL"
-    BB_TOKEN="$ATLASSIAN_TOKEN"
-  else
-    echo ""
-    echo "Bitbucket uses your Atlassian account credentials (same API token)."
-    echo "Generate one at: https://id.atlassian.com/manage-profile/security/api-tokens"
-    echo ""
-    ask "Atlassian email: " BB_EMAIL
-    ask_secret "Atlassian API token: " BB_TOKEN
-  fi
-
-  ask "Default Bitbucket workspace (optional - press Enter to skip): " BB_WORKSPACE
-
   mkdir -p "$HOME/.mcp/bitbucket"
   BB_ENV="$HOME/.mcp/bitbucket/.env"
   BB_START="$HOME/.mcp/bitbucket/start.sh"
-  WRITE_BB_ENV=true
+  WRITE_BB_ENV=false
 
   if [[ -f "$BB_ENV" ]]; then
-    ask "$BB_ENV already exists. Overwrite? [y/N] " OW_BB
-    [[ "${OW_BB:-n}" =~ ^[Yy]$ ]] || WRITE_BB_ENV=false
+    info "Existing credentials found at $BB_ENV."
+    ask "Update credentials? [y/N] " UPDATE_BB
+    [[ "${UPDATE_BB:-n}" =~ ^[Yy]$ ]] && WRITE_BB_ENV=true
+  else
+    WRITE_BB_ENV=true
   fi
 
   if [[ "$WRITE_BB_ENV" == "true" ]]; then
+    # Reuse credentials entered this run if Atlassian was just set up
+    if [[ -n "$ATLASSIAN_EMAIL" ]] && [[ -n "$ATLASSIAN_TOKEN" ]]; then
+      info "Reusing Atlassian credentials for Bitbucket."
+      BB_EMAIL="$ATLASSIAN_EMAIL"
+      BB_TOKEN="$ATLASSIAN_TOKEN"
+    else
+      echo ""
+      echo "Bitbucket uses your Atlassian account credentials (same API token)."
+      echo "Generate one at: https://id.atlassian.com/manage-profile/security/api-tokens"
+      echo ""
+      ask "Atlassian email: " BB_EMAIL
+      ask_secret "Atlassian API token: " BB_TOKEN
+    fi
+
+    ask "Default Bitbucket workspace (optional - press Enter to skip): " BB_WORKSPACE
+
     {
       echo "ATLASSIAN_USER_EMAIL=${BB_EMAIL}"
       echo "ATLASSIAN_API_TOKEN=${BB_TOKEN}"
@@ -279,7 +284,6 @@ set +a
 exec npx -y @aashari/mcp-server-atlassian-bitbucket
 STARTEOF
   chmod +x "$BB_START"
-  info "Bitbucket start.sh written."
 
   pick_name "mcp-bitbucket"
   BB_NAME="$PICKED_NAME"
@@ -297,25 +301,28 @@ echo -e "${GREEN}==========================================${NC}"
 ask_yn "Set up CircleCI MCP?" SETUP_CIRCLECI
 
 if [[ "$SETUP_CIRCLECI" =~ ^[Yy] ]]; then
-  echo ""
-  echo "Generate a CircleCI API token at:"
-  echo "  https://app.circleci.com/settings/user/tokens"
-  echo ""
-  ask "Press Enter when you have your token ready..." _DUMMY
-
-  ask_secret "CircleCI API token: " CIRCLECI_TOKEN
-
   mkdir -p "$HOME/.mcp/circleci"
   CI_ENV="$HOME/.mcp/circleci/.env"
   CI_START="$HOME/.mcp/circleci/start.sh"
-  WRITE_CI_ENV=true
+  WRITE_CI_ENV=false
 
   if [[ -f "$CI_ENV" ]]; then
-    ask "$CI_ENV already exists. Overwrite? [y/N] " OW_CI
-    [[ "${OW_CI:-n}" =~ ^[Yy]$ ]] || WRITE_CI_ENV=false
+    info "Existing credentials found at $CI_ENV."
+    ask "Update credentials? [y/N] " UPDATE_CI
+    [[ "${UPDATE_CI:-n}" =~ ^[Yy]$ ]] && WRITE_CI_ENV=true
+  else
+    WRITE_CI_ENV=true
   fi
 
   if [[ "$WRITE_CI_ENV" == "true" ]]; then
+    echo ""
+    echo "Generate a CircleCI API token at:"
+    echo "  https://app.circleci.com/settings/user/tokens"
+    echo ""
+    ask "Press Enter when you have your token ready..." _DUMMY
+
+    ask_secret "CircleCI API token: " CIRCLECI_TOKEN
+
     cat > "$CI_ENV" <<EOF
 CIRCLECI_TOKEN=${CIRCLECI_TOKEN}
 CIRCLECI_BASE_URL=https://circleci.com
@@ -333,7 +340,6 @@ set +a
 exec npx -y @circleci/mcp-server-circleci@latest
 STARTEOF
   chmod +x "$CI_START"
-  info "CircleCI start.sh written."
 
   pick_name "circleci"
   CI_NAME="$PICKED_NAME"
