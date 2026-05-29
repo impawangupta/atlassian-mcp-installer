@@ -289,8 +289,8 @@ if [[ "$SETUP_BITBUCKET" =~ ^[Yy] ]]; then
       echo "Bitbucket uses your Atlassian account credentials (same API token)."
       echo "Generate one at: https://id.atlassian.com/manage-profile/security/api-tokens"
       echo ""
-      ask "Atlassian email: " BB_EMAIL
-      ask_secret "Atlassian API token: " BB_TOKEN
+      ask "Bitbucket user email: " BB_EMAIL
+      ask_secret "Bitbucket user API token: " BB_TOKEN
     fi
 
     ask "Default Bitbucket workspace (optional - press Enter to skip): " BB_WORKSPACE
